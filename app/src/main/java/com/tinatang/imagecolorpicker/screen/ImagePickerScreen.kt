@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -23,7 +23,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.tinatang.imagecolorpicker.picker.ImageColorPicker
 import com.tinatang.imagecolorpicker.rememberColorPickerController
 import com.tinatang.imagecolorpicker.utils.FullScreenDialog
@@ -38,7 +37,7 @@ fun ImageColorPickerScreen() {
     val imageUrl = "https://i.imgur.com/DJWfzBr.jpeg"
 
     Surface(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.background
     ) {
         // 使用 UrlToBitmap 函數來加載圖片
@@ -72,6 +71,7 @@ fun TestScreen(imageBitmap: ImageBitmap) {
     if (showDialog) {
         FullScreenDialog(
             imageBitmap = imageBitmap,
+            scaleImageSize = 50,
             onDismissRequest = {
                 showDialog = false
             }
@@ -82,7 +82,9 @@ fun TestScreen(imageBitmap: ImageBitmap) {
 @Composable
 fun EditorScreen(
     imageBitmap: ImageBitmap,
+    scaleImageSize: Int,
     onColorChanged: (Color) -> Unit,
+    onDragEnd: () -> Unit
 ) {
     val TAG = "EditorScreen"
     val controller = rememberColorPickerController()
@@ -102,11 +104,10 @@ fun EditorScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         ImageColorPicker(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp),
+            modifier = Modifier.fillMaxSize(),
             controller = controller,
             paletteImageBitmap = imageBitmap,
+            scaleImageSize = scaleImageSize,
             onColorChanged = { colorEnvelope ->
                 hexCode = colorEnvelope.hexCode
                 color = colorEnvelope.color
@@ -159,7 +160,8 @@ fun EditorScreen(
                         topLeft = squareTopLeft
                     )
                 }
-            }
+            },
+            onDragEnd = onDragEnd
         )
     }
 }

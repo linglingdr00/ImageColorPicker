@@ -1,6 +1,5 @@
 package com.tinatang.imagecolorpicker.picker
 
-
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.util.Log
@@ -32,20 +31,6 @@ import com.tinatang.imagecolorpicker.extension.roundToInt
 import com.tinatang.imagecolorpicker.extension.scaledSize
 import com.tinatang.imagecolorpicker.extension.size
 
-/**
- * ImageColorPicker allows you to get colors from any images by tapping on the desired color.
- *
- * @param modifier [Modifier] to decorate the internal Canvas.
- * @param controller Allows you to control and interacts with color pickers and all relevant subcomponents.
- * @param paletteImageBitmap [ImageBitmap] to draw the palette.
- * @param wheelImageBitmap [ImageBitmap] to draw the wheel.
- * @param drawOnPosSelected to draw anything on the canvas when [ColorPickerController.selectedPoint] changes
- * @param drawDefaultWheelIndicator should the indicator be drawn on the canvas. Defaults to false if either [wheelImageBitmap] or [drawOnPosSelected] are not null.
- * @param paletteContentScale Represents a rule to apply to scale a source rectangle to be inscribed into a destination.
- * @param previewImagePainter Display an image instead of the palette on the inspection preview mode on Android Studio.
- * @param onColorChanged Color changed listener.
- */
-
 private const val TAG = "ImageColorPicker"
 
 @Composable
@@ -58,9 +43,11 @@ fun ImageColorPicker(
     drawDefaultWheelIndicator: Boolean = wheelImageBitmap == null && drawOnPosSelected == null,
     paletteContentScale: PaletteContentScale = PaletteContentScale.FIT,
     previewImagePainter: Painter? = null,
+    scaleImageSize: Int,
     onColorChanged: (colorEnvelope: ColorEnvelope) -> Unit = {},
     onPositionChanged: (position: Offset) -> Unit = {},
-    onImageChanged: (image: ImageBitmap) -> Unit = {}
+    onImageChanged: (image: ImageBitmap) -> Unit = {},
+    onDragEnd: () -> Unit
 ) {
     val density = LocalDensity.current.density
 
@@ -86,24 +73,13 @@ fun ImageColorPicker(
 
     // 更新選擇的位置
     LaunchedEffect(selectedPosition) {
-        // 計算 selected point 的位置
-        val radius = 30 * density
-        val centerX = selectedPosition.x / scale - offset.x / scale
-        val centerY = selectedPosition.y / scale - offset.y / scale
-        // 計算裁減區域，確保不會超過圖片邊界
-        val left = (centerX - radius).coerceIn(0f, width.toFloat())
-        val top = (centerY - radius).coerceIn(0f, height.toFloat())
-        val right = (centerX + radius).coerceIn(0f, width.toFloat())
-        val bottom = (centerY + radius).coerceIn(0f, height.toFloat())
-        // 確保裁減區域的寬度、高度 > 0
-        val croppedWidth = (right - left).coerceAtLeast(1f).toInt()
-        val croppedHeight = (bottom - top).coerceAtLeast(1f).toInt()
-        // 繪製裁減圖形
-        val clipRect = Rect(
-            left.toInt(),
-            top.toInt(),
-            left.toInt() + croppedWidth,
-            top.toInt() + croppedHeight
+        // 更新圖片裁減區域
+        val clipRect = updateScaleImgRect(
+            selectedPosition = selectedPosition,
+            scaleImageSize = scaleImageSize,
+            density = density,
+            scale = scale,
+            offset = offset
         )
         // 裁減圖片
         val croppedBitmap = imageBitmap.toCroppedImage(clipRect)
@@ -156,10 +132,10 @@ fun ImageColorPicker(
                     origPoint.x.coerceIn(0f, width - 1f),
                     origPoint.y.coerceIn(0f, height - 1f),
                 )
-                Log.d(com.tinatang.imagecolorpicker.picker.TAG, "Color origPoint: $origPoint, imPoint: $imPoint")
+                Log.d(TAG, "Color origPoint: $origPoint, imPoint: $imPoint")
                 val px = imageBitmap.getPixel(imPoint.roundToInt())
                 val newPoint = imPoint * scale + offset
-                Log.d(com.tinatang.imagecolorpicker.picker.TAG, "Color newPoint: $newPoint")
+                Log.d(TAG, "Color newPoint: $newPoint")
                 //selectedPosition = newPoint
                 px to newPoint
             }
@@ -172,7 +148,36 @@ fun ImageColorPicker(
                 paint = emptyPaint,
             )
         },
+        onDragEnd = onDragEnd
     )
+}
+
+fun updateScaleImgRect(
+    selectedPosition: Offset,
+    scaleImageSize: Int,
+    density: Float,
+    scale: Float,
+    offset: Offset,
+): Rect {
+    // 計算 selected point 的位置
+    val radius = scaleImageSize * density
+    val centerX = selectedPosition.x / scale - offset.x / scale
+    val centerY = selectedPosition.y / scale - offset.y / scale
+
+    // 計算裁減區域，確保不會超過圖片邊界
+    val left = (centerX - radius / 2)
+    val top = (centerY - radius / 2)
+    val right = (centerX + radius / 2)
+    val bottom = (centerY + radius / 2)
+
+    // 繪製裁減圖形
+    val clipRect = Rect(
+        left.toInt(),
+        top.toInt(),
+        right.toInt(),
+        bottom.toInt()
+    )
+    return clipRect
 }
 
 private fun getMetricsForFit(imSize: IntSize, targetSize: IntSize) =
@@ -201,9 +206,9 @@ private fun scaleToHeight(imSize: IntSize, targetSize: IntSize): Pair<Float, Off
     return scale to offset
 }
 
-// 截取图像的扩展函数
+// 截圖方法
 private fun ImageBitmap.toCroppedImage(rect: Rect): Bitmap? {
-    val androidBitmap = this.asAndroidBitmap() // 将 ImageBitmap 转换为 Bitmap
+    val androidBitmap = this.asAndroidBitmap()
     val croppedBitmap = androidBitmap.config?.let {
         Bitmap.createBitmap(
         rect.width(),
@@ -214,7 +219,7 @@ private fun ImageBitmap.toCroppedImage(rect: Rect): Bitmap? {
 
     croppedBitmap?.let {
         val canvas = android.graphics.Canvas(croppedBitmap)
-        val srcRect = Rect(rect.left.toInt(), rect.top.toInt(), rect.right.toInt(), rect.bottom.toInt())
+        val srcRect = Rect(rect.left, rect.top, rect.right, rect.bottom)
         val dstRect = Rect(0, 0, croppedBitmap.width, croppedBitmap.height)
 
         canvas.drawBitmap(androidBitmap, srcRect, dstRect, null)

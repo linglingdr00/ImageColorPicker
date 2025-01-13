@@ -4,16 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -32,9 +25,11 @@ import com.tinatang.imagecolorpicker.screen.EditorScreen
 @Composable
 fun FullScreenDialog(
     imageBitmap: ImageBitmap,
+    scaleImageSize: Int = 50,
     onDismissRequest: () -> Unit
 ) {
     var selectedColor by remember { mutableStateOf(Color.Transparent) }
+
     Dialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(
@@ -43,22 +38,28 @@ fun FullScreenDialog(
             usePlatformDefaultWidth = false,
         )
     ) {
-        Surface (
-            modifier = Modifier.fillMaxSize(),
-            color = Color.White,
-            contentColor = Color.White
+        Box (
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White),
+            contentAlignment = Alignment.Center
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Box(modifier = Modifier.weight(1f)) {
+                Box(modifier = Modifier
+                    .weight(1f)
+                    .padding(scaleImageSize.dp / 2)
+                ) {
                     EditorScreen(
                         imageBitmap = imageBitmap,
+                        scaleImageSize = scaleImageSize,
                         onColorChanged = {
                             selectedColor = it
-                        }
+                        },
+                        onDragEnd = onDismissRequest
                     )
                 }
                 Column(
@@ -73,14 +74,7 @@ fun FullScreenDialog(
                             )
                             .size(50.dp)
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Box {
-                        Button(onClick = onDismissRequest) {
-                            Text("Dismiss")
-                        }
-                    }
                 }
-
             }
         }
     }

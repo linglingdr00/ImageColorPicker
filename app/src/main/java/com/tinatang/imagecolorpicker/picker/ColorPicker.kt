@@ -49,6 +49,7 @@ internal fun ColorPicker(
     sizeChanged: (IntSize) -> Unit = { _ -> },
     setup: ColorPickerController.() -> Unit,
     draw: Canvas.(size: Size) -> Unit,
+    onDragEnd: () -> Unit,
 ) {
     var initialized by remember { mutableStateOf(false) }
 
@@ -75,15 +76,23 @@ internal fun ColorPicker(
                     }
                 }
             }
-            .pointerInput(Unit) {
+            // 點按
+            /*.pointerInput(Unit) {
                 detectTapGestures { offset ->
                     controller.selectByCoordinate(offset, true)
                 }
-            }
+            }*/
+            // 按壓
             .pointerInput(Unit) {
-                detectDragGestures { change, _ ->
-                    controller.selectByCoordinate(change.position, true)
-                }
+                detectDragGestures(
+                    onDrag = { change, _ ->
+                        controller.selectByCoordinate(change.position, true)
+                    },
+                    // 拖曳結束時
+                    onDragEnd = {
+                        onDragEnd()
+                    }
+                )
             },
     ) {
         drawIntoCanvas { canvas ->
