@@ -1,11 +1,17 @@
 package com.tinatang.imagecolorpicker.screen
 
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -23,10 +29,10 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.tinatang.imagecolorpicker.picker.ImageColorPicker
 import com.tinatang.imagecolorpicker.rememberColorPickerController
-import com.tinatang.imagecolorpicker.utils.FullScreenDialog
 import com.tinatang.imagecolorpicker.utils.UrlToBitmap
 import com.tinatang.imagecolorpicker.utils.drawWaterDropBorder
 import com.tinatang.imagecolorpicker.utils.hollowWhiteSquare
@@ -46,9 +52,8 @@ fun ImageColorPickerScreen() {
             imageURL = imageUrl,
             context = LocalContext.current,
             onSuccess = {
-                // 成功回調，顯示加載的圖片
-                TestScreen(imageBitmap = it.asImageBitmap())
-                //EditorScreen(it.asImageBitmap())
+                // 顯示主畫面
+                MainScreen(it.asImageBitmap())
             },
             onError = {
                 // 顯示錯誤信息
@@ -59,23 +64,48 @@ fun ImageColorPickerScreen() {
 }
 
 @Composable
-fun TestScreen(imageBitmap: ImageBitmap) {
-    var showDialog by remember { mutableStateOf(false) }
-    Box(
+fun MainScreen(imageBitmap: ImageBitmap) {
+    // 選擇的顏色
+    var selectedColor by remember { mutableStateOf(Color.Transparent) }
+    Surface (
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        color = Color.White,
+        contentColor = Color.White
     ) {
-        Button(onClick = { showDialog = true }) {
-            Text("show dialog")
-        }
-    }
-    if (showDialog) {
-        FullScreenDialog(
-            imageBitmap = imageBitmap,
-            onDismissRequest = {
-                showDialog = false
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(10.dp)
+            ) {
+                EditorScreen(
+                    imageBitmap = imageBitmap,
+                    onColorChanged = {
+                        selectedColor = it
+                    }
+                )
             }
-        )
+            Box(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Selected Color",
+                        color = Color.Black,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = selectedColor,
+                                shape = CircleShape
+                            )
+                            .size(50.dp)
+                    )
+                }
+
+            }
+        }
     }
 }
 
